@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package customer;
+option go_package = "./v1";
+
+import "google/api/annotations.proto";
+
+message Customer {
+    // The unique id of the customer
+    int32 id = 1;
+    // The first name of the customer
+    string first_name = 2;
+    // The last name of the customer
+    string last_name = 3;
+    // The email of the customer
+    string email = 4;
+    // The amount of funds a customer has added to the account
+    int32 wallet = 5;
+}
+
+message CreateCustomerRequest {
+    // The first name of the customer
+    string first_name = 1;
+    // The last name of the customer
+    string last_name = 2;
+    // The email of the customer
+    string email = 3;
+    // The password for the account
+    string password = 4;
+}
+
+message CreateCustomerResponse {
+    // Customer object
+    Customer customer = 1;
+}
+
+message GetCustomerRequest {
+    // The email of the customer
+    string email = 1;
+    // The password for the account
+    string password = 2;
+}
+
+message GetCustomerResponse {
+    // Customer object
+    Customer customer = 1;
+}
+
+message MakePaymentRequest {
+    // The unique ID of the customer
+    int32 customer_id = 1;
+    // The unique ID of the order
+    int32 order_id = 2;
+    // The total amount of the order
+    int32 amount = 3;
+}
+
+message MakePaymentResponse {
+    // The unique ID of the order
+    int32 order_id = 1;
+    message PaymentError {
+        // The error message
+        string error_message = 1;
+    }
+    oneof response {
+        // The remaining balance in the customer's wallet
+        int32 remaining = 2;
+        // A payment error - amount spent is greater than amount in wallet
+        PaymentError error = 3;
+    }
+}
+
+service CustomerService {
+    rpc CreateCustomer(CreateCustomerRequest) returns (CreateCustomerResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/customer"
+            body: "*"
+        };
+    }
+    rpc GetCustomer(GetCustomerRequest) returns (GetCustomerResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/customer/login"
+            body: "*"
+        };
+    }
+}

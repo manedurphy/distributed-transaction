@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+    </head>
+
+    <body>
+        <form id="signup-form">
+            <label for="firstname">First</label><br />
+            <input type="text" id="firstname" name="firstname" /><br />
+            <label for="lastname">Last</label><br />
+            <input type="text" id="lastname" name="lastname" /><br />
+            <label for="signup-email">Email</label><br />
+            <input type="email" id="signup-email" name="signup-email" /><br />
+            <label for="signup-password">Password</label><br />
+            <input type="password" id="signup-password" name="signup-password" /><br />
+            <br />
+            <button type="button" onclick="javascript:createCustomer()">Sign Up</button>
+            <button type="button" onclick="javascript:renderLoginForm()">Have an account? Login</button>
+        </form>
+
+        <form id="login-form" style="display: none">
+            <label for="login-email">Email</label><br />
+            <input type="text" id="login-email" name="login-email" /><br />
+            <br />
+            <label for="login-password">Password</label><br />
+            <input type="password" id="login-password" name="login-password" /><br />
+            <br />
+            <button type="button" onclick="javascript:login()">Login</button>
+            <button type="button" onclick="javascript:renderSignupForm()">Don't have an account? Sign Up</button>
+        </form>
+
+        <form id="order-form" style="display: none">
+            <label for="total">Enter total amount for order</label><br />
+            <input type="text" id="total" name="total" /><br />
+            <br />
+            <button id="order-btn" type="button" onclick="javascript:placeOrder()">Click</button>
+        </form>
+    </body>
+    <script type="text/javascript" src="index.js"></script>
+</html>

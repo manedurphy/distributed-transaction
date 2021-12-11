@@ -1,0 +1,83 @@
+version: '3.9'
+
+services:
+  customers_db:
+    image: mysql:8.0.27
+    container_name: customers_db
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: customers
+      MYSQL_USER: customers_db_user
+      MYSQL_PASSWORD: customers_db_password
+    volumes:
+      - './data/customers:/var/lib/mysql'
+    ports:
+      - "3306:3306"
+
+  orders_db:
+    image: mysql:8.0.27
+    container_name: orders_db
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: orders
+      MYSQL_USER: orders_db_user
+      MYSQL_PASSWORD: orders_db_password
+    volumes:
+      - './data/orders:/var/lib/mysql'
+    ports:
+      - "3307:3306"
+
+  redis:
+    image: redis:6.2.6-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  apigateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.apigateway
+    container_name: apigateway
+    environment:
+      ORDERS_SERVICE_ADDR: orders:8081
+      CUSTOMERS_SERVICE_ADDR: customers:8080
+    ports:
+      - "8000:8000"
+      - "3000:3000"
+
+  customers:
+    build:
+      context: .
+      dockerfile: Dockerfile.customers
+    container_name: customers
+    restart: always
+    environment:
+      CUSTOMERS_DB_ADDR: customers_db:3306
+      CUSTOMERS_MYSQL_USERNAME: customers_db_user
+      CUSTOMERS_MYSQL_PASSWORD: customers_db_password
+      REDIS_ADDR: redis:6379
+    ports:
+      - "8080:8080"
+    depends_on:
+      - customers_db
+
+  orders:
+    build:
+      context: .
+      dockerfile: Dockerfile.orders
+    container_name: orders
+    restart: always
+    environment:
+      ORDERS_DB_ADDR: orders_db:3306
+      ORDERS_MYSQL_USERNAME: orders_db_user
+      ORDERS_MYSQL_PASSWORD: orders_db_password
+      REDIS_ADDR: redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - orders_db

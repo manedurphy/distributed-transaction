@@ -13,8 +13,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	customerv1 "dist-tranx/customers/customer/v1"
-	orderv1 "dist-tranx/orders/order/v1"
+	customerv1 "dist-tranx/api/customers/v1"
+	orderv1 "dist-tranx/api/orders/v1"
 )
 
 func main() {

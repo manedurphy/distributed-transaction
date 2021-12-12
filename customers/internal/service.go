@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
-	pb "dist-tranx/customers/customer/v1"
+	pb "dist-tranx/api/customers/v1"
 )
 
 var (

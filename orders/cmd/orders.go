@@ -7,8 +7,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
+	pb "dist-tranx/api/orders/v1"
 	service "dist-tranx/orders/internal"
-	pb "dist-tranx/orders/order/v1"
 
 	_ "github.com/go-sql-driver/mysql"
 )

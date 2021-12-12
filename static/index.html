@@ -10,26 +10,26 @@
     <body>
         <form id="signup-form">
             <label for="firstname">First</label><br />
-            <input type="text" id="firstname" name="firstname" /><br />
+            <input type="text" id="firstname" name="firstname" required /><br />
             <label for="lastname">Last</label><br />
-            <input type="text" id="lastname" name="lastname" /><br />
+            <input type="text" id="lastname" name="lastname" required /><br />
             <label for="signup-email">Email</label><br />
-            <input type="email" id="signup-email" name="signup-email" /><br />
+            <input type="email" id="signup-email" name="signup-email" required /><br />
             <label for="signup-password">Password</label><br />
-            <input type="password" id="signup-password" name="signup-password" /><br />
+            <input type="password" id="signup-password" name="signup-password" required /><br />
             <br />
-            <button type="button" onclick="javascript:createCustomer()">Sign Up</button>
+            <button type="submit">Sign Up</button>
             <button type="button" onclick="javascript:renderLoginForm()">Have an account? Login</button>
         </form>
 
         <form id="login-form" style="display: none">
             <label for="login-email">Email</label><br />
-            <input type="text" id="login-email" name="login-email" /><br />
+            <input type="text" id="login-email" name="login-email" required /><br />
             <br />
             <label for="login-password">Password</label><br />
-            <input type="password" id="login-password" name="login-password" /><br />
+            <input type="password" id="login-password" name="login-password" required /><br />
             <br />
-            <button type="button" onclick="javascript:login()">Login</button>
+            <button type="submit">Login</button>
             <button type="button" onclick="javascript:renderSignupForm()">Don't have an account? Sign Up</button>
         </form>
 
@@ -37,7 +37,8 @@
             <label for="total">Enter total amount for order</label><br />
             <input type="text" id="total" name="total" /><br />
             <br />
-            <button id="order-btn" type="button" onclick="javascript:placeOrder()">Click</button>
+            <button id="order-btn" type="button" onclick="javascript:placeOrder()">Place Order</button>
+            <button id="funds-btn" type="button" onclick="javascript:addFundsToWallet()">Add Funds</button>
         </form>
     </body>
     <script type="text/javascript" src="index.js"></script>

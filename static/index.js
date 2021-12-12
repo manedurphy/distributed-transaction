@@ -11,6 +11,16 @@ const loginForm = document.getElementById('login-form');
 const orderForm = document.getElementById('order-form');
 const total = document.getElementById('total');
 
+signupForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    createCustomer();
+});
+
+loginForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    login();
+});
+
 function createCustomer() {
     const customer = {
         first_name: first.value,
@@ -18,7 +28,7 @@ function createCustomer() {
         email: signupEmail.value,
         password: signupPassword.value,
     };
-    fetch('http://localhost:8000/api/v1/customer', {
+    fetch('http://localhost:8000/api/customers/v1', {
         method: 'POST',
         body: JSON.stringify(customer),
         headers: {
@@ -47,7 +57,7 @@ function login() {
         email: loginEmail.value,
         password: loginPassword.value,
     };
-    fetch('http://localhost:8000/api/v1/customer/login', {
+    fetch('http://localhost:8000/api/customers/v1/login', {
         method: 'POST',
         body: JSON.stringify(req),
         headers: {
@@ -97,7 +107,7 @@ function placeOrder() {
         total: Number(total.value),
     };
 
-    fetch('http://localhost:8000/api/v1/order', {
+    fetch('http://localhost:8000/api/orders/v1', {
         method: 'POST',
         body: JSON.stringify(order),
         headers: {
@@ -144,3 +154,5 @@ function getOrderStatus({ id, total }) {
         }
     };
 }
+
+function addFundsToWallet() {}

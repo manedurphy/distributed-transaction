@@ -12,8 +12,13 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
-	customerPb "dist-tranx/customers/customer/v1"
-	pb "dist-tranx/orders/order/v1"
+	customerPb "dist-tranx/api/customers/v1"
+	pb "dist-tranx/api/orders/v1"
+)
+
+const (
+	ORDER_CREATED_EVENT = "ORDER_CREATED_EVENT"
+	MAKE_PAYMENT_EVENT  = "MAKE_PAYMENT_EVENT"
 )
 
 var (
@@ -109,7 +114,7 @@ func (s *Service) CreateOrder(ctx context.Context, req *pb.CreateOrderRequest) (
 		"order_id":    orderId,
 	}).Infoln("successfully placed order")
 
-	if err = s.conn.Publish(ctx, "ORDER_CREATED_EVENT", string(b)).Err(); err != nil {
+	if err = s.conn.Publish(ctx, ORDER_CREATED_EVENT, string(b)).Err(); err != nil {
 		s.logger.Errorln("could not publish order event")
 		return &pb.CreateOrderResponse{}, status.Error(codes.Internal, "Internal server error")
 	}
@@ -158,8 +163,10 @@ func (s *Service) GetOrderStatus(ctx context.Context, req *pb.GetOrderStatusRequ
 }
 
 func (s *Service) ListenForPayments(ctx context.Context) {
-	paymentsChan := s.conn.Subscribe(ctx, "PAYMENT_EVENT").Channel()
-	s.logger.Infoln("listening for payments...")
+	paymentsChan := s.conn.Subscribe(ctx, MAKE_PAYMENT_EVENT).Channel()
+	s.logger.WithFields(logrus.Fields{
+		"channels": []string{MAKE_PAYMENT_EVENT},
+	}).Infoln("subscribed to event channels")
 	for {
 		var (
 			tx           *sql.Tx
@@ -190,13 +197,13 @@ func (s *Service) ListenForPayments(ctx context.Context) {
 				"order_id": resp.GetOrderId(),
 				"err":      resp.GetError().GetErrorMessage(),
 			}).Errorln("an error occurred while placing an order")
-			sqlStatement = fmt.Sprintf("DELETE FROM orders_table WHERE id='%d';", resp.GetOrderId())
+			sqlStatement = fmt.Sprintf("DELETE FROM orders_table WHERE id=%d;", resp.GetOrderId())
 		case *customerPb.MakePaymentResponse_Remaining:
 			s.logger.WithFields(logrus.Fields{
 				"order_id":            resp.GetOrderId(),
 				"remaining_in_wallet": resp.GetRemaining(),
 			}).Infoln("order placed")
-			sqlStatement = fmt.Sprintf("UPDATE orders_table SET status='in progress' WHERE id='%d';", resp.GetOrderId())
+			sqlStatement = fmt.Sprintf("UPDATE orders_table SET status='paid' WHERE id=%d;", resp.GetOrderId())
 		}
 
 		if _, err = tx.ExecContext(ctx, sqlStatement); err != nil {

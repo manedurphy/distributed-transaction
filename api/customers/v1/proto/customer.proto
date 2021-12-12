@@ -73,13 +73,13 @@ message MakePaymentResponse {
 service CustomerService {
     rpc CreateCustomer(CreateCustomerRequest) returns (CreateCustomerResponse) {
         option (google.api.http) = {
-            post: "/api/v1/customer"
+            post: "/api/customers/v1"
             body: "*"
         };
     }
     rpc GetCustomer(GetCustomerRequest) returns (GetCustomerResponse) {
         option (google.api.http) = {
-            post: "/api/v1/customer/login"
+            post: "/api/customers/v1/login"
             body: "*"
         };
     }

@@ -14,7 +14,7 @@ services:
     volumes:
       - './data/customers:/var/lib/mysql'
     ports:
-      - "3306:3306"
+      - "3307:3306"
 
   orders_db:
     image: mysql:8.0.27
@@ -29,7 +29,22 @@ services:
     volumes:
       - './data/orders:/var/lib/mysql'
     ports:
-      - "3307:3306"
+      - "3308:3306"
+
+  payments_db:
+    image: mysql:8.0.27
+    container_name: payments_db
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: payments
+      MYSQL_USER: payments_db_user
+      MYSQL_PASSWORD: payments_db_password
+    volumes:
+      - './data/payments:/var/lib/mysql'
+    ports:
+      - "3309:3306"
 
   redis:
     image: redis:6.2.6-alpine
@@ -44,8 +59,9 @@ services:
       dockerfile: Dockerfile.apigateway
     container_name: apigateway
     environment:
-      ORDERS_SERVICE_ADDR: orders:8081
       CUSTOMERS_SERVICE_ADDR: customers:8080
+      ORDERS_SERVICE_ADDR: orders:8081
+      PAYMENTS_SERVICE_ADDR: payments:8082
     ports:
       - "8000:8000"
       - "3000:3000"
@@ -81,3 +97,19 @@ services:
       - "8081:8081"
     depends_on:
       - orders_db
+
+  payments:
+    build:
+      context: .
+      dockerfile: Dockerfile.payments
+    container_name: payments
+    restart: always
+    environment:
+      PAYMENTS_DB_ADDR: payments_db:3306
+      PAYMENTS_MYSQL_USERNAME: payments_db_user
+      PAYMENTS_MYSQL_PASSWORD: payments_db_password
+      REDIS_ADDR: redis:6379
+    ports:
+      - "8082:8082"
+    depends_on:
+      - payments_db

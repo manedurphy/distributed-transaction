@@ -7,7 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
-	pb "dist-tranx/customers/customer/v1"
+	pb "dist-tranx/api/customers/v1"
 	service "dist-tranx/customers/internal"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -40,13 +40,14 @@ func main() {
 		panic(err)
 	}
 
-	go srv.ListenForOrders(ctx)
+	go srv.ListenForEvents(ctx)
 	pb.RegisterCustomerServiceServer(grpcServer, srv)
 
 	logger.WithFields(logrus.Fields{
 		"port":         8080,
 		"service_name": "customers",
 	}).Infoln("gRPC server started")
+
 	if err = grpcServer.Serve(lis); err != nil {
 		panic(err)
 	}

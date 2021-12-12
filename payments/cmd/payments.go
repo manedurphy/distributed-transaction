@@ -1,21 +1,19 @@
 package main
 
 import (
-	"context"
 	"net"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
-	pb "dist-tranx/api/orders/v1"
-	service "dist-tranx/orders/internal"
+	pb "dist-tranx/api/payments/v1"
+	service "dist-tranx/payments/internal"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
 func main() {
 	var (
-		ctx        context.Context
 		lis        net.Listener
 		opts       []grpc.ServerOption
 		grpcServer *grpc.Server
@@ -24,12 +22,11 @@ func main() {
 		err        error
 	)
 
-	ctx = context.Background()
 	logger = logrus.New()
 	logger.Formatter = &logrus.JSONFormatter{
 		PrettyPrint: true,
 	}
-	if lis, err = net.Listen("tcp", ":8081"); err != nil {
+	if lis, err = net.Listen("tcp", ":8082"); err != nil {
 		panic(err)
 	}
 
@@ -39,13 +36,12 @@ func main() {
 	}); err != nil {
 		panic(err)
 	}
-	go srv.ListenForPayments(ctx)
 
-	pb.RegisterOrderServiceServer(grpcServer, srv)
+	pb.RegisterPaymentServiceServer(grpcServer, srv)
 
 	logger.WithFields(logrus.Fields{
-		"port":         8081,
-		"service_name": "orders",
+		"port":         8082,
+		"service_name": "payments",
 	}).Infoln("gRPC server started")
 	if err = grpcServer.Serve(lis); err != nil {
 		panic(err)

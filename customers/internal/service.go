@@ -12,7 +12,14 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
-	pb "dist-tranx/customers/customer/v1"
+	pb "dist-tranx/api/customers/v1"
+	paymentv1 "dist-tranx/api/payments/v1"
+)
+
+const (
+	ORDER_CREATED_EVENT = "ORDER_CREATED_EVENT"
+	ADD_FUNDS_EVENT     = "ADD_FUNDS_EVENT"
+	MAKE_PAYMENT_EVENT  = "MAKE_PAYMENT_EVENT"
 )
 
 var (
@@ -105,7 +112,7 @@ func (s *Service) CreateCustomer(ctx context.Context, req *pb.CreateCustomerRequ
 		err          error
 	)
 
-	query = fmt.Sprintf("SELECT id FROM customers.customers_table WHERE email = '%s'", req.GetEmail())
+	query = fmt.Sprintf("SELECT id FROM customers_table WHERE email = '%s'", req.GetEmail())
 	queryResult = s.db.QueryRowContext(ctx, query)
 	queryResult.Scan(&customer.Id)
 
@@ -157,165 +164,220 @@ func (s *Service) CreateCustomer(ctx context.Context, req *pb.CreateCustomerRequ
 	}, nil
 }
 
-func (s *Service) ListenForOrders(ctx context.Context) {
-	ordersChan := s.conn.Subscribe(ctx, "ORDER_CREATED_EVENT").Channel()
-	s.logger.Infoln("listening for orders...")
+func (s *Service) ListenForEvents(ctx context.Context) {
+	var (
+		ordersChan <-chan *redis.Message
+		fundsChan  <-chan *redis.Message
+	)
+
+	ordersChan = s.conn.Subscribe(ctx, ORDER_CREATED_EVENT).Channel()
+	fundsChan = s.conn.Subscribe(ctx, ADD_FUNDS_EVENT).Channel()
+
+	s.logger.WithFields(logrus.Fields{
+		"channels": []string{ORDER_CREATED_EVENT, ADD_FUNDS_EVENT},
+	}).Infoln("subscribed to event channels")
 	for {
-		var (
-			order        *redis.Message
-			req          pb.MakePaymentRequest
-			resp         *pb.MakePaymentResponse
-			tx           *sql.Tx
-			b            []byte
-			remaining    int32
-			err          error
-			sqlStatement string
-		)
+		select {
+		case fund := <-fundsChan:
+			var (
+				addFundsEvent paymentv1.AddFundsEvent
+				tx            *sql.Tx
+				sqlStatement  string
+				err           error
+			)
 
-		order = <-ordersChan
-		if err = proto.Unmarshal([]byte(order.Payload), &req); err != nil {
 			s.logger.WithFields(logrus.Fields{
-				"err": err,
-			}).Errorln("unmarshaling error")
-			resp = &pb.MakePaymentResponse{
-				OrderId: req.GetOrderId(),
-				Response: &pb.MakePaymentResponse_Error{
-					Error: &pb.MakePaymentResponse_PaymentError{
-						ErrorMessage: err.Error(),
-					},
-				},
-			}
-			if b, err = proto.Marshal(resp); err != nil {
+				"channel": ADD_FUNDS_EVENT,
+			}).Infoln("event occurred")
+
+			if err = proto.Unmarshal([]byte(fund.Payload), &addFundsEvent); err != nil {
 				s.logger.WithFields(logrus.Fields{
 					"err": err,
-				}).Errorln("marshaling error")
+				}).Errorln("unmarshaling error")
 				continue
 			}
-			if err = s.conn.Publish(ctx, "PAYMENT_EVENT", string(b)).Err(); err != nil {
+
+			if tx, err = s.db.BeginTx(ctx, nil); err != nil {
 				s.logger.WithFields(logrus.Fields{
 					"err": err,
-				}).Errorln("could not publish event")
+				}).Errorln("could not start transaction")
+				continue
 			}
-			continue
-		}
 
-		if tx, err = s.db.BeginTx(ctx, nil); err != nil {
+			sqlStatement = fmt.Sprintf("UPDATE customers_table SET wallet=wallet+%d WHERE id='%d';", addFundsEvent.GetAmount(), addFundsEvent.GetCustomerId())
+			if _, err = tx.ExecContext(ctx, sqlStatement); err != nil {
+				tx.Rollback()
+				s.logger.WithFields(logrus.Fields{
+					"err":   err,
+					"query": sqlStatement,
+				}).Errorln("could not execute query")
+				continue
+			}
+
+			if err = tx.Commit(); err != nil {
+				s.logger.WithFields(logrus.Fields{
+					"err": err,
+				}).Errorln("could not commit transaction")
+			}
+		case order := <-ordersChan:
+			var (
+				req          pb.MakePaymentRequest
+				resp         *pb.MakePaymentResponse
+				tx           *sql.Tx
+				b            []byte
+				remaining    int32
+				err          error
+				sqlStatement string
+			)
+
 			s.logger.WithFields(logrus.Fields{
-				"err": err,
-			}).Errorln("could not start transaction")
+				"channel": ORDER_CREATED_EVENT,
+			}).Infoln("event occurred")
+
+			if err = proto.Unmarshal([]byte(order.Payload), &req); err != nil {
+				s.logger.WithFields(logrus.Fields{
+					"err": err,
+				}).Errorln("unmarshaling error")
+				resp = &pb.MakePaymentResponse{
+					OrderId: req.GetOrderId(),
+					Response: &pb.MakePaymentResponse_Error{
+						Error: &pb.MakePaymentResponse_PaymentError{
+							ErrorMessage: err.Error(),
+						},
+					},
+				}
+				if b, err = proto.Marshal(resp); err != nil {
+					s.logger.WithFields(logrus.Fields{
+						"err": err,
+					}).Errorln("marshaling error")
+					continue
+				}
+				if err = s.conn.Publish(ctx, MAKE_PAYMENT_EVENT, string(b)).Err(); err != nil {
+					s.logger.WithFields(logrus.Fields{
+						"err": err,
+					}).Errorln("could not publish event")
+				}
+				continue
+			}
+
+			if tx, err = s.db.BeginTx(ctx, nil); err != nil {
+				s.logger.WithFields(logrus.Fields{
+					"err": err,
+				}).Errorln("could not start transaction")
+				resp = &pb.MakePaymentResponse{
+					OrderId: req.GetOrderId(),
+					Response: &pb.MakePaymentResponse_Error{
+						Error: &pb.MakePaymentResponse_PaymentError{
+							ErrorMessage: err.Error(),
+						},
+					},
+				}
+				if b, err = proto.Marshal(resp); err != nil {
+					s.logger.WithFields(logrus.Fields{
+						"err": err,
+					}).Errorln("marshaling error")
+					continue
+				}
+				if err = s.conn.Publish(ctx, MAKE_PAYMENT_EVENT, string(b)).Err(); err != nil {
+					s.logger.WithFields(logrus.Fields{
+						"err": err,
+					}).Errorln("could not publish event")
+				}
+				continue
+			}
+
+			sqlStatement = fmt.Sprintf("UPDATE customers_table SET wallet=wallet-%d WHERE id='%d';", req.GetAmount(), req.GetCustomerId())
+			if _, err = tx.ExecContext(ctx, sqlStatement); err != nil {
+				tx.Rollback()
+				resp = &pb.MakePaymentResponse{
+					OrderId: req.GetOrderId(),
+					Response: &pb.MakePaymentResponse_Error{
+						Error: &pb.MakePaymentResponse_PaymentError{
+							ErrorMessage: err.Error(),
+						},
+					},
+				}
+				if b, err = proto.Marshal(resp); err != nil {
+					s.logger.WithFields(logrus.Fields{
+						"err": err,
+					}).Errorln("marshaling error")
+					continue
+				}
+				if err = s.conn.Publish(ctx, MAKE_PAYMENT_EVENT, string(b)).Err(); err != nil {
+					s.logger.WithFields(logrus.Fields{
+						"err": err,
+					}).Errorln("could not publish event")
+				}
+				continue
+			}
+
+			sqlStatement = fmt.Sprintf("SELECT wallet FROM customers_table WHERE id='%d'", req.GetCustomerId())
+			if err = tx.QueryRowContext(ctx, sqlStatement).Scan(&remaining); err != nil {
+				tx.Rollback()
+				resp = &pb.MakePaymentResponse{
+					OrderId: req.GetOrderId(),
+					Response: &pb.MakePaymentResponse_Error{
+						Error: &pb.MakePaymentResponse_PaymentError{
+							ErrorMessage: err.Error(),
+						},
+					},
+				}
+				if b, err = proto.Marshal(resp); err != nil {
+					s.logger.WithFields(logrus.Fields{
+						"err": err,
+					}).Errorln("marshaling error")
+					continue
+				}
+				if err = s.conn.Publish(ctx, MAKE_PAYMENT_EVENT, string(b)).Err(); err != nil {
+					s.logger.WithFields(logrus.Fields{
+						"err": err,
+					}).Errorln("could not publish event")
+				}
+				continue
+			}
+
+			if err = tx.Commit(); err != nil {
+				resp = &pb.MakePaymentResponse{
+					OrderId: req.GetOrderId(),
+					Response: &pb.MakePaymentResponse_Error{
+						Error: &pb.MakePaymentResponse_PaymentError{
+							ErrorMessage: err.Error(),
+						},
+					},
+				}
+				if b, err = proto.Marshal(resp); err != nil {
+					s.logger.WithFields(logrus.Fields{
+						"err": err,
+					}).Errorln("marshaling error")
+					continue
+				}
+				if err = s.conn.Publish(ctx, MAKE_PAYMENT_EVENT, string(b)).Err(); err != nil {
+					s.logger.WithFields(logrus.Fields{
+						"err": err,
+					}).Errorln("could not publish event")
+				}
+				continue
+			}
+
 			resp = &pb.MakePaymentResponse{
 				OrderId: req.GetOrderId(),
-				Response: &pb.MakePaymentResponse_Error{
-					Error: &pb.MakePaymentResponse_PaymentError{
-						ErrorMessage: err.Error(),
-					},
+				Response: &pb.MakePaymentResponse_Remaining{
+					Remaining: remaining,
 				},
 			}
+
 			if b, err = proto.Marshal(resp); err != nil {
 				s.logger.WithFields(logrus.Fields{
 					"err": err,
 				}).Errorln("marshaling error")
 				continue
 			}
-			if err = s.conn.Publish(ctx, "PAYMENT_EVENT", string(b)).Err(); err != nil {
+
+			if err = s.conn.Publish(ctx, MAKE_PAYMENT_EVENT, string(b)).Err(); err != nil {
 				s.logger.WithFields(logrus.Fields{
 					"err": err,
 				}).Errorln("could not publish event")
 			}
-			continue
-		}
-
-		sqlStatement = fmt.Sprintf("UPDATE customers_table SET wallet=wallet-%d WHERE id='%d';", req.GetAmount(), req.GetCustomerId())
-		if _, err = tx.ExecContext(ctx, sqlStatement); err != nil {
-			tx.Rollback()
-			resp = &pb.MakePaymentResponse{
-				OrderId: req.GetOrderId(),
-				Response: &pb.MakePaymentResponse_Error{
-					Error: &pb.MakePaymentResponse_PaymentError{
-						ErrorMessage: err.Error(),
-					},
-				},
-			}
-			if b, err = proto.Marshal(resp); err != nil {
-				s.logger.WithFields(logrus.Fields{
-					"err": err,
-				}).Errorln("marshaling error")
-				continue
-			}
-			if err = s.conn.Publish(ctx, "PAYMENT_EVENT", string(b)).Err(); err != nil {
-				s.logger.WithFields(logrus.Fields{
-					"err": err,
-				}).Errorln("could not publish event")
-			}
-			continue
-		}
-
-		sqlStatement = fmt.Sprintf("SELECT wallet FROM customers_table WHERE id='%d'", req.GetCustomerId())
-		if err = tx.QueryRowContext(ctx, sqlStatement).Scan(&remaining); err != nil {
-			tx.Rollback()
-			resp = &pb.MakePaymentResponse{
-				OrderId: req.GetOrderId(),
-				Response: &pb.MakePaymentResponse_Error{
-					Error: &pb.MakePaymentResponse_PaymentError{
-						ErrorMessage: err.Error(),
-					},
-				},
-			}
-			if b, err = proto.Marshal(resp); err != nil {
-				s.logger.WithFields(logrus.Fields{
-					"err": err,
-				}).Errorln("marshaling error")
-				continue
-			}
-			if err = s.conn.Publish(ctx, "PAYMENT_EVENT", string(b)).Err(); err != nil {
-				s.logger.WithFields(logrus.Fields{
-					"err": err,
-				}).Errorln("could not publish event")
-			}
-			continue
-		}
-
-		if err = tx.Commit(); err != nil {
-			resp = &pb.MakePaymentResponse{
-				OrderId: req.GetOrderId(),
-				Response: &pb.MakePaymentResponse_Error{
-					Error: &pb.MakePaymentResponse_PaymentError{
-						ErrorMessage: err.Error(),
-					},
-				},
-			}
-			if b, err = proto.Marshal(resp); err != nil {
-				s.logger.WithFields(logrus.Fields{
-					"err": err,
-				}).Errorln("marshaling error")
-				continue
-			}
-			if err = s.conn.Publish(ctx, "PAYMENT_EVENT", string(b)).Err(); err != nil {
-				s.logger.WithFields(logrus.Fields{
-					"err": err,
-				}).Errorln("could not publish event")
-			}
-			continue
-		}
-
-		resp = &pb.MakePaymentResponse{
-			OrderId: req.GetOrderId(),
-			Response: &pb.MakePaymentResponse_Remaining{
-				Remaining: remaining,
-			},
-		}
-
-		if b, err = proto.Marshal(resp); err != nil {
-			s.logger.WithFields(logrus.Fields{
-				"err": err,
-			}).Errorln("marshaling error")
-			continue
-		}
-
-		if err = s.conn.Publish(ctx, "PAYMENT_EVENT", string(b)).Err(); err != nil {
-			s.logger.WithFields(logrus.Fields{
-				"err": err,
-			}).Errorln("could not publish event")
 		}
 	}
 }

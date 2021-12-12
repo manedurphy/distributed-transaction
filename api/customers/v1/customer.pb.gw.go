@@ -111,7 +111,7 @@ func RegisterCustomerServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/customer.CustomerService/CreateCustomer", runtime.WithHTTPPathPattern("/api/v1/customer"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/customer.CustomerService/CreateCustomer", runtime.WithHTTPPathPattern("/api/customers/v1"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -134,7 +134,7 @@ func RegisterCustomerServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/customer.CustomerService/GetCustomer", runtime.WithHTTPPathPattern("/api/v1/customer/login"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/customer.CustomerService/GetCustomer", runtime.WithHTTPPathPattern("/api/customers/v1/login"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -196,7 +196,7 @@ func RegisterCustomerServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/customer.CustomerService/CreateCustomer", runtime.WithHTTPPathPattern("/api/v1/customer"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/customer.CustomerService/CreateCustomer", runtime.WithHTTPPathPattern("/api/customers/v1"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -216,7 +216,7 @@ func RegisterCustomerServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/customer.CustomerService/GetCustomer", runtime.WithHTTPPathPattern("/api/v1/customer/login"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/customer.CustomerService/GetCustomer", runtime.WithHTTPPathPattern("/api/customers/v1/login"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -236,9 +236,9 @@ func RegisterCustomerServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 }
 
 var (
-	pattern_CustomerService_CreateCustomer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "customer"}, ""))
+	pattern_CustomerService_CreateCustomer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "customers", "v1"}, ""))
 
-	pattern_CustomerService_GetCustomer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "customer", "login"}, ""))
+	pattern_CustomerService_GetCustomer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "customers", "v1", "login"}, ""))
 )
 
 var (

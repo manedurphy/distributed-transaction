@@ -13,8 +13,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	customerv1 "dist-tranx/customers/customer/v1"
-	orderv1 "dist-tranx/orders/order/v1"
+	customerv1 "dist-tranx/api/customers/v1"
+	orderv1 "dist-tranx/api/orders/v1"
+	paymentv1 "dist-tranx/api/payments/v1"
 )
 
 func main() {
@@ -42,6 +43,10 @@ func main() {
 	}
 
 	if err = customerv1.RegisterCustomerServiceHandlerFromEndpoint(ctx, mux, os.Getenv("CUSTOMERS_SERVICE_ADDR"), opts); err != nil {
+		panic(err)
+	}
+
+	if err = paymentv1.RegisterPaymentServiceHandlerFromEndpoint(ctx, mux, os.Getenv("PAYMENTS_SERVICE_ADDR"), opts); err != nil {
 		panic(err)
 	}
 

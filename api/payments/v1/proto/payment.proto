@@ -13,7 +13,7 @@ message CreditCard {
     // The expiration date
     string expiration = 3;
     // The 3-digit security code of the credit card
-    int32 cvc = 4;
+    int32 cvv = 4;
 }
 
 message PaymentError {
@@ -50,12 +50,22 @@ message AddCreditCardRequest {
     // The expiration date
     string expiration = 3;
     // The 3-digit security code of the credit card
-    int32 cvc = 4;
+    int32 cvv = 4;
 }
 
 message AddCreditCardResponse {
     // The unique id of the credit card record
     int32 id = 1;
+}
+
+message GetCreditCardsRequest {
+    // The unique id of the customer
+    int32 customer_id = 1;
+}
+
+message GetCreditCardsResponse {
+    // All credit cards that belong to the customer
+    repeated string credit_cards = 1;
 }
 
 service PaymentService {
@@ -68,6 +78,12 @@ service PaymentService {
     rpc AddFunds(AddFundsRequest) returns (AddFundsResponse) {
         option (google.api.http) = {
             post: "/api/payments/v1/funds"
+            body: "*"
+        };
+    }
+    rpc GetCreditCards(GetCreditCardsRequest) returns (GetCreditCardsResponse) {
+        option (google.api.http) = {
+            post: "/api/payments/v1/credit-cards"
             body: "*"
         };
     }

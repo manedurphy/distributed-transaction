@@ -1,5 +1,5 @@
 let customerData;
-const body = document.getElementsByTagName('body');
+const body = document.getElementsByTagName('body')[0];
 const first = document.getElementById('firstname');
 const last = document.getElementById('lastname');
 const signupEmail = document.getElementById('signup-email');
@@ -10,6 +10,14 @@ const signupForm = document.getElementById('signup-form');
 const loginForm = document.getElementById('login-form');
 const orderForm = document.getElementById('order-form');
 const total = document.getElementById('total');
+const fundsForm = document.getElementById('funds-form');
+const ccList = document.getElementById('cc-list');
+const ccForm = document.getElementById('cc-form');
+const ccNum = document.getElementById('cc-num');
+const expMonth = document.getElementById('exp-month');
+const expYear = document.getElementById('exp-year');
+const cvv = document.getElementById('cvv');
+const walletAdd = document.getElementById('wallet-add');
 
 signupForm.addEventListener('submit', function (e) {
     e.preventDefault();
@@ -19,6 +27,16 @@ signupForm.addEventListener('submit', function (e) {
 loginForm.addEventListener('submit', function (e) {
     e.preventDefault();
     login();
+});
+
+ccForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    addCreditCard();
+});
+
+fundsForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    addFundsToWallet();
 });
 
 function createCustomer() {
@@ -44,7 +62,7 @@ function createCustomer() {
             }
             const errMsgDiv = document.createElement('div');
             errMsgDiv.textContent = data.message;
-            body[0].prepend(errMsgDiv);
+            body.prepend(errMsgDiv);
             setTimeout(function () {
                 errMsgDiv.remove();
             }, 3000);
@@ -53,13 +71,13 @@ function createCustomer() {
 }
 
 function login() {
-    const req = {
+    const reqBody = {
         email: loginEmail.value,
         password: loginPassword.value,
     };
     fetch('http://localhost:8000/api/customers/v1/login', {
         method: 'POST',
-        body: JSON.stringify(req),
+        body: JSON.stringify(reqBody),
         headers: {
             'Content-Type': 'application/json',
         },
@@ -73,10 +91,35 @@ function login() {
             }
             const errMsgDiv = document.createElement('div');
             errMsgDiv.textContent = data.message;
-            body[0].prepend(errMsgDiv);
+            body.prepend(errMsgDiv);
             setTimeout(function () {
                 errMsgDiv.remove();
             }, 3000);
+        })
+        .catch((err) => console.error(err));
+}
+
+function addCreditCard() {
+    const reqBody = {
+        customer_id: customerData.id,
+        credit_card_number: ccNum.value,
+        expiration: `${expYear.value}-${expMonth.value}`,
+        cvv: Number(cvv.value),
+    };
+
+    fetch('http://localhost:8000/api/payments/v1/credit-card', {
+        method: 'POST',
+        body: JSON.stringify(reqBody),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+        .then((resp) => resp.json())
+        .then((data) => {
+            if (data.id) {
+                renderFundsForm();
+                return;
+            }
         })
         .catch((err) => console.error(err));
 }
@@ -86,9 +129,10 @@ function renderOrderForm() {
     walletDiv.id = 'wallet';
     signupForm.style.display = 'none';
     loginForm.style.display = 'none';
+    fundsForm.style.display = 'none';
     orderForm.style.display = 'block';
     walletDiv.textContent = `You have ${customerData.wallet} dollars in your wallet`;
-    body[0].prepend(walletDiv);
+    body.prepend(walletDiv);
 }
 
 function renderLoginForm() {
@@ -126,13 +170,13 @@ function getOrderStatus({ id, total }) {
 
     orderForm.style.display = 'none';
     orderStatusDiv.textContent = 'placing order...';
-    body[0].appendChild(orderStatusDiv);
+    body.appendChild(orderStatusDiv);
 
     const sse = new EventSource(`http://localhost:8000/sse/${id}`);
     sse.onmessage = function (event) {
         const data = JSON.parse(event.data);
 
-        if (data.status == 'in progress') {
+        if (data.status == 'paid') {
             orderStatusDiv.textContent = 'order placed!';
             customerData.wallet -= total;
             sse.close();
@@ -155,4 +199,81 @@ function getOrderStatus({ id, total }) {
     };
 }
 
-function addFundsToWallet() {}
+function addFundsToWallet() {
+    const reqBody = {
+        customer_id: customerData.id,
+        credit_card_id: 1,
+        amount: Number(walletAdd.value),
+    };
+
+    fetch('http://localhost:8000/api/payments/v1/funds', {
+        method: 'POST',
+        body: JSON.stringify(reqBody),
+    })
+        .then((resp) => {
+            if (resp.ok) {
+                customerData.wallet += reqBody.amount;
+            }
+            return resp.json();
+        })
+        .then((data) => {
+            if (data.message) {
+                const fundsSuccessDiv = document.createElement('div');
+                fundsSuccessDiv.textContent = data.message;
+                body.prepend(fundsSuccessDiv);
+                walletAdd.value = null;
+
+                setTimeout(function () {
+                    fundsSuccessDiv.remove();
+                }, 3000);
+            }
+        })
+        .catch((err) => console.error(err));
+}
+
+function renderCreditCardForm() {
+    fundsForm.style.display = 'none';
+    ccForm.style.display = 'block';
+}
+
+function renderFundsForm() {
+    const walletDiv = document.getElementById('wallet');
+    if (walletDiv != null) {
+        walletDiv.remove();
+    }
+    fundsForm.style.display = 'block';
+    orderForm.style.display = 'none';
+    ccForm.style.display = 'none';
+    while (ccList.firstChild) {
+        ccList.removeChild(ccList.firstChild);
+    }
+
+    const reqBody = {
+        customer_id: customerData.id,
+    };
+
+    fetch('http://localhost:8000/api/payments/v1/credit-cards', {
+        method: 'POST',
+        body: JSON.stringify(reqBody),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+        .then((resp) => resp.json())
+        .then((data) => {
+            if (data.credit_cards) {
+                data.credit_cards.forEach((cc) => {
+                    const opt = document.createElement('option');
+                    opt.value = cc;
+                    opt.textContent = `**** ${cc}`;
+                    ccList.appendChild(opt);
+                });
+                return;
+            }
+
+            const opt = document.createElement('option');
+            ccList.appendChild(opt);
+            opt.textContent = 'No credit cards found';
+        })
+        .catch((err) => console.error(err));
+}

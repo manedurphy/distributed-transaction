@@ -82,7 +82,7 @@ func (s *Service) AddCreditCard(ctx context.Context, req *pb.AddCreditCardReques
 		return &pb.AddCreditCardResponse{}, status.Error(codes.Internal, "Internal server error")
 	}
 
-	sqlStatement = fmt.Sprintf("INSERT INTO payments_table (credit_card_number, expiration, cvc, customer_id) VALUES ('%s', '%s', %d, %d);", req.GetCreditCardNumber(), fmt.Sprintf("%s-01", req.GetExpiration()), req.GetCvc(), req.GetCustomerId())
+	sqlStatement = fmt.Sprintf("INSERT INTO payments_table (credit_card_number, expiration, cvv, customer_id) VALUES ('%s', '%s', %d, %d);", req.GetCreditCardNumber(), fmt.Sprintf("%s-01", req.GetExpiration()), req.GetCvv(), req.GetCustomerId())
 	if result, err = tx.ExecContext(ctx, sqlStatement); err != nil {
 		tx.Rollback()
 		s.logger.WithFields(logrus.Fields{
@@ -119,7 +119,7 @@ func (s *Service) AddFunds(ctx context.Context, req *pb.AddFundsRequest) (*pb.Ad
 		"request": req,
 	}).Infoln("request received")
 
-	query = fmt.Sprintf("SELECT id FROM payments_table WHERE id = %d", req.GetCreditCardId())
+	query = fmt.Sprintf("SELECT id FROM payments_table WHERE id=%d", req.GetCreditCardId())
 	if rows, err = s.db.QueryContext(ctx, query); err != nil {
 		s.logger.WithFields(logrus.Fields{
 			"err":   err,
@@ -156,5 +156,32 @@ func (s *Service) AddFunds(ctx context.Context, req *pb.AddFundsRequest) (*pb.Ad
 
 	return &pb.AddFundsResponse{
 		Message: "Successfully added funds",
+	}, nil
+}
+
+func (s *Service) GetCreditCards(ctx context.Context, req *pb.GetCreditCardsRequest) (*pb.GetCreditCardsResponse, error) {
+	var (
+		rows              *sql.Rows
+		query             string
+		creditCardNumbers []string
+		err               error
+	)
+
+	query = fmt.Sprintf("SELECT credit_card_number FROM payments_table WHERE customer_id = %d", req.GetCustomerId())
+	if rows, err = s.db.QueryContext(ctx, query); err != nil {
+		return &pb.GetCreditCardsResponse{}, status.Error(codes.NotFound, "No credit cards found for this account")
+	}
+
+	creditCardNumbers = make([]string, 0)
+	for rows.Next() {
+		var val string
+		if err = rows.Scan(&val); err != nil {
+			return &pb.GetCreditCardsResponse{}, status.Error(codes.Internal, "Internal server error")
+		}
+		creditCardNumbers = append(creditCardNumbers, val[len(val)-4:])
+	}
+
+	return &pb.GetCreditCardsResponse{
+		CreditCards: creditCardNumbers,
 	}, nil
 }

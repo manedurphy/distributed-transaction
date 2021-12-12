@@ -38,7 +38,55 @@
             <input type="text" id="total" name="total" /><br />
             <br />
             <button id="order-btn" type="button" onclick="javascript:placeOrder()">Place Order</button>
-            <button id="funds-btn" type="button" onclick="javascript:addFundsToWallet()">Add Funds</button>
+            <button id="funds-btn" type="button" onclick="javascript:renderFundsForm()">Add Funds</button>
+        </form>
+
+        <form id="funds-form" style="display: none">
+            <label for="cc-list">Select your Credit Card</label><br />
+            <select name="cc-list" id="cc-list"></select>
+            <br />
+            <label for="wallet-add">How much would you like to add?</label> <br />
+            <input type="number" name="wallet-add" id="wallet-add" placeholder="15" />
+            <br />
+            <button type="submit">Add Funds</button>
+            <button type="button" onclick="javascript:renderCreditCardForm()">Add Credit Card</button>
+            <button type="button" onclick="javascript:renderOrderForm()">Back to Orders</button>
+        </form>
+
+        <form id="cc-form" style="display: none">
+            <label for="cc-num">Credit card number</label><br />
+            <input type="text" id="cc-num" name="cc-num" placeholder="1111-2222-3333-4444" />
+            <br />
+            <label for="exp-month">Expiration Month</label><br />
+            <select name="exp-month" id="exp-month">
+                <option value="01">1</option>
+                <option value="02">2</option>
+                <option value="03">3</option>
+                <option value="04">4</option>
+                <option value="05">5</option>
+                <option value="06">6</option>
+                <option value="07">7</option>
+                <option value="08">8</option>
+                <option value="09">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+            </select>
+            <br />
+            <label for="expiration-year">Expiration Year</label><br />
+            <select name="exp-year" id="exp-year">
+                <option value="2022">2022</option>
+                <option value="2023">2023</option>
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+            </select>
+            <br />
+            <label for="cvv">CVV</label><br />
+            <input type="text" id="cvv" name="cvv" placeholder="111" /> <br />
+            <br />
+            <button id="add-cc-btn" type="submit">Add</button>
+            <button type="button" onclick="javascript:renderFundsForm()">Back</button>
         </form>
     </body>
     <script type="text/javascript" src="index.js"></script>

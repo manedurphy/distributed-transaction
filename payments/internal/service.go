@@ -15,6 +15,10 @@ import (
 	pb "dist-tranx/api/payments/v1"
 )
 
+const (
+	ADD_FUNDS_EVENT = "ADD_FUNDS_EVENT"
+)
+
 var (
 	connString = fmt.Sprintf("%s:%s@tcp(%s)/payments", os.Getenv("PAYMENTS_MYSQL_USERNAME"), os.Getenv("PAYMENTS_MYSQL_PASSWORD"), os.Getenv("PAYMENTS_DB_ADDR"))
 )
@@ -146,7 +150,7 @@ func (s *Service) AddFunds(ctx context.Context, req *pb.AddFundsRequest) (*pb.Ad
 		return &pb.AddFundsResponse{}, status.Error(codes.Internal, "Internal server error")
 	}
 
-	if err = s.conn.Publish(ctx, "ADD_FUNDS_EVENT", addFundsEventProto).Err(); err != nil {
+	if err = s.conn.Publish(ctx, ADD_FUNDS_EVENT, addFundsEventProto).Err(); err != nil {
 		return &pb.AddFundsResponse{}, status.Error(codes.Internal, "Internal server error")
 	}
 
@@ -154,22 +158,3 @@ func (s *Service) AddFunds(ctx context.Context, req *pb.AddFundsRequest) (*pb.Ad
 		Message: "Successfully added funds",
 	}, nil
 }
-
-// func (s *Service) ListenForFunds(ctx context.Context) {
-// 	fundsChan := s.conn.Subscribe(ctx, "ADD_FUNDS_EVENT").Channel()
-// 	s.logger.Infoln("listening for funds...")
-// 	for {
-// 		var (
-// 			funds *redis.Message
-// 			req   pb.AddFundsRequest
-// 			err   error
-// 		)
-// 		funds = <-fundsChan
-// 		if err = proto.Unmarshal([]byte(funds.Payload), &req); err != nil {
-// 			s.logger.WithFields(logrus.Fields{
-// 				"err": err,
-// 			}).Errorln("unmarshaling error")
-// 			continue
-// 		}
-// 	}
-// }

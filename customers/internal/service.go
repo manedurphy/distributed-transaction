@@ -19,6 +19,7 @@ import (
 const (
 	ORDER_CREATED_EVENT = "ORDER_CREATED_EVENT"
 	ADD_FUNDS_EVENT     = "ADD_FUNDS_EVENT"
+	MAKE_PAYMENT_EVENT  = "MAKE_PAYMENT_EVENT"
 )
 
 var (
@@ -111,7 +112,7 @@ func (s *Service) CreateCustomer(ctx context.Context, req *pb.CreateCustomerRequ
 		err          error
 	)
 
-	query = fmt.Sprintf("SELECT id FROM customers.customers_table WHERE email = '%s'", req.GetEmail())
+	query = fmt.Sprintf("SELECT id FROM customers_table WHERE email = '%s'", req.GetEmail())
 	queryResult = s.db.QueryRowContext(ctx, query)
 	queryResult.Scan(&customer.Id)
 
@@ -163,7 +164,7 @@ func (s *Service) CreateCustomer(ctx context.Context, req *pb.CreateCustomerRequ
 	}, nil
 }
 
-func (s *Service) ListenForOrders(ctx context.Context) {
+func (s *Service) ListenForEvents(ctx context.Context) {
 	var (
 		ordersChan <-chan *redis.Message
 		fundsChan  <-chan *redis.Message
@@ -251,7 +252,7 @@ func (s *Service) ListenForOrders(ctx context.Context) {
 					}).Errorln("marshaling error")
 					continue
 				}
-				if err = s.conn.Publish(ctx, "PAYMENT_EVENT", string(b)).Err(); err != nil {
+				if err = s.conn.Publish(ctx, MAKE_PAYMENT_EVENT, string(b)).Err(); err != nil {
 					s.logger.WithFields(logrus.Fields{
 						"err": err,
 					}).Errorln("could not publish event")
@@ -277,7 +278,7 @@ func (s *Service) ListenForOrders(ctx context.Context) {
 					}).Errorln("marshaling error")
 					continue
 				}
-				if err = s.conn.Publish(ctx, "PAYMENT_EVENT", string(b)).Err(); err != nil {
+				if err = s.conn.Publish(ctx, MAKE_PAYMENT_EVENT, string(b)).Err(); err != nil {
 					s.logger.WithFields(logrus.Fields{
 						"err": err,
 					}).Errorln("could not publish event")
@@ -302,7 +303,7 @@ func (s *Service) ListenForOrders(ctx context.Context) {
 					}).Errorln("marshaling error")
 					continue
 				}
-				if err = s.conn.Publish(ctx, "PAYMENT_EVENT", string(b)).Err(); err != nil {
+				if err = s.conn.Publish(ctx, MAKE_PAYMENT_EVENT, string(b)).Err(); err != nil {
 					s.logger.WithFields(logrus.Fields{
 						"err": err,
 					}).Errorln("could not publish event")
@@ -327,7 +328,7 @@ func (s *Service) ListenForOrders(ctx context.Context) {
 					}).Errorln("marshaling error")
 					continue
 				}
-				if err = s.conn.Publish(ctx, "PAYMENT_EVENT", string(b)).Err(); err != nil {
+				if err = s.conn.Publish(ctx, MAKE_PAYMENT_EVENT, string(b)).Err(); err != nil {
 					s.logger.WithFields(logrus.Fields{
 						"err": err,
 					}).Errorln("could not publish event")
@@ -350,7 +351,7 @@ func (s *Service) ListenForOrders(ctx context.Context) {
 					}).Errorln("marshaling error")
 					continue
 				}
-				if err = s.conn.Publish(ctx, "PAYMENT_EVENT", string(b)).Err(); err != nil {
+				if err = s.conn.Publish(ctx, MAKE_PAYMENT_EVENT, string(b)).Err(); err != nil {
 					s.logger.WithFields(logrus.Fields{
 						"err": err,
 					}).Errorln("could not publish event")
@@ -372,12 +373,11 @@ func (s *Service) ListenForOrders(ctx context.Context) {
 				continue
 			}
 
-			if err = s.conn.Publish(ctx, "PAYMENT_EVENT", string(b)).Err(); err != nil {
+			if err = s.conn.Publish(ctx, MAKE_PAYMENT_EVENT, string(b)).Err(); err != nil {
 				s.logger.WithFields(logrus.Fields{
 					"err": err,
 				}).Errorln("could not publish event")
 			}
-
 		}
 	}
 }

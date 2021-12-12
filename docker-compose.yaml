@@ -14,7 +14,7 @@ services:
     volumes:
       - './data/customers:/var/lib/mysql'
     ports:
-      - "3306:3306"
+      - "3307:3306"
 
   orders_db:
     image: mysql:8.0.27
@@ -29,7 +29,22 @@ services:
     volumes:
       - './data/orders:/var/lib/mysql'
     ports:
-      - "3307:3306"
+      - "3308:3306"
+
+  payments_db:
+    image: mysql:8.0.27
+    container_name: payments_db
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: payments
+      MYSQL_USER: payments_db_user
+      MYSQL_PASSWORD: payments_db_password
+    volumes:
+      - './data/payments:/var/lib/mysql'
+    ports:
+      - "3309:3306"
 
   redis:
     image: redis:6.2.6-alpine

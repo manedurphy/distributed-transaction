@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package payment;
+option go_package = "./v1";
+
+import "google/api/annotations.proto";
+
+message CreditCard {
+    // The unique id of the credit card record
+    int32 id = 1;
+    // The credit card number
+    string credit_card_number = 2;
+    // The expiration date
+    string expiration = 3;
+    // The 3-digit security code of the credit card
+    int32 cvc = 4;
+}
+
+message PaymentError {
+    // The error message
+    string message = 1;
+}
+
+message AddFundsRequest {
+    // The unique id of the customer
+    int32 customer_id = 1;
+    // The unique id of the credit card record
+    int32 credit_card_id = 2;
+    // The amount of funds to add
+    int32 amount = 3;
+}
+
+message AddFundsResponse {
+    // A message after successfully publishing message to Redis for wallet event
+    string message = 1;
+}
+
+message AddFundsEvent {
+    // The unique id of the customer
+    int32 customer_id = 1;
+    // The amount of funds to add
+    int32 amount = 2;
+}
+
+message AddCreditCardRequest {
+    // The unique id of the customer
+    int32 customer_id = 1;
+    // The 16-digit credit card number
+    string credit_card_number = 2;
+    // The expiration date
+    string expiration = 3;
+    // The 3-digit security code of the credit card
+    int32 cvc = 4;
+}
+
+message AddCreditCardResponse {
+    // The unique id of the credit card record
+    int32 id = 1;
+}
+
+service PaymentService {
+    rpc AddCreditCard(AddCreditCardRequest) returns (AddCreditCardResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/payment/credit-card"
+            body: "*"
+        };
+    }
+    rpc AddFunds(AddFundsRequest) returns (AddFundsResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/payment/funds"
+            body: "*"
+        };
+    }
+}

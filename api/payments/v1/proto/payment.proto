@@ -61,13 +61,13 @@ message AddCreditCardResponse {
 service PaymentService {
     rpc AddCreditCard(AddCreditCardRequest) returns (AddCreditCardResponse) {
         option (google.api.http) = {
-            post: "/api/v1/payment/credit-card"
+            post: "/api/payments/v1/credit-card"
             body: "*"
         };
     }
     rpc AddFunds(AddFundsRequest) returns (AddFundsResponse) {
         option (google.api.http) = {
-            post: "/api/v1/payment/funds"
+            post: "/api/payments/v1/funds"
             body: "*"
         };
     }

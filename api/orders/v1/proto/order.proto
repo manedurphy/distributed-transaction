@@ -39,7 +39,7 @@ message GetOrderStatusResponse {
 service OrderService {
     rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse) {
         option (google.api.http) = {
-            post: "/api/v1/order"
+            post: "/api/orders/v1"
             body: "*"
         };
     }

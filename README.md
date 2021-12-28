@@ -10,6 +10,7 @@
 	- [gRPC Services](#grpc-services)
 	- [Redis Pub/Sub](#redis-pubsub)
 - [Features & Design](#features--design)
+- [Deployment](#deployment)
 
 ## Purpose
 - The purpose of this project was to build a working example of handling a transaction that occurs across multiple microservices with individual databases.
@@ -46,3 +47,7 @@ Orders service removes the record from its database.
 - Communication between the Payments service and Customers service is also handled asynchronously via the Redis broker.
 
 ![design](screenshots/distributed_transaction_design.png)
+
+## Deployment
+
+- This application is deployed on my homelab Kubernetes [cluster](https://apps.manedurphy.dev/distributed-transaction/)

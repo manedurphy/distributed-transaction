@@ -34,14 +34,14 @@ message CreateCustomerResponse {
     Customer customer = 1;
 }
 
-message GetCustomerRequest {
+message LoginRequest {
     // The email of the customer
     string email = 1;
     // The password for the account
     string password = 2;
 }
 
-message GetCustomerResponse {
+message LoginResponse {
     // Customer object
     Customer customer = 1;
 }
@@ -70,16 +70,33 @@ message MakePaymentResponse {
     }
 }
 
+message GetCustomerByIDRequest {
+    // The unique ID of the customer
+    int32 customer_id = 1;
+}
+
+message GetCustomerByIDResponse {
+    // Customer object
+    Customer customer = 1;
+}
+
 service CustomerService {
     rpc CreateCustomer(CreateCustomerRequest) returns (CreateCustomerResponse) {
         option (google.api.http) = {
-            post: "/api/customers/v1"
+            post: "/distributed-transaction/customers/v1/create"
             body: "*"
         };
     }
-    rpc GetCustomer(GetCustomerRequest) returns (GetCustomerResponse) {
+    rpc Login(LoginRequest) returns (LoginResponse) {
         option (google.api.http) = {
-            post: "/api/customers/v1/login"
+            post: "/distributed-transaction/customers/v1/login"
+            body: "*"
+        };
+    }
+    rpc GetCustomerByID(GetCustomerByIDRequest)
+        returns (GetCustomerByIDResponse) {
+        option (google.api.http) = {
+            post: "/distributed-transaction/customers/v1/get"
             body: "*"
         };
     }

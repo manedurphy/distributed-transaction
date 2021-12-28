@@ -161,27 +161,34 @@ func (s *Service) AddFunds(ctx context.Context, req *pb.AddFundsRequest) (*pb.Ad
 
 func (s *Service) GetCreditCards(ctx context.Context, req *pb.GetCreditCardsRequest) (*pb.GetCreditCardsResponse, error) {
 	var (
-		rows              *sql.Rows
-		query             string
-		creditCardNumbers []string
-		err               error
+		rows        *sql.Rows
+		query       string
+		creditCards []*pb.GetCreditCardsResponse_CreditCard
+		err         error
 	)
 
-	query = fmt.Sprintf("SELECT credit_card_number FROM payments_table WHERE customer_id = %d", req.GetCustomerId())
+	query = fmt.Sprintf("SELECT id, credit_card_number FROM payments_table WHERE customer_id = %d", req.GetCustomerId())
 	if rows, err = s.db.QueryContext(ctx, query); err != nil {
 		return &pb.GetCreditCardsResponse{}, status.Error(codes.NotFound, "No credit cards found for this account")
 	}
 
-	creditCardNumbers = make([]string, 0)
+	creditCards = make([]*pb.GetCreditCardsResponse_CreditCard, 0)
 	for rows.Next() {
-		var val string
-		if err = rows.Scan(&val); err != nil {
+		var (
+			id  int32
+			val string
+		)
+		if err = rows.Scan(&id, &val); err != nil {
 			return &pb.GetCreditCardsResponse{}, status.Error(codes.Internal, "Internal server error")
 		}
-		creditCardNumbers = append(creditCardNumbers, val[len(val)-4:])
+
+		creditCards = append(creditCards, &pb.GetCreditCardsResponse_CreditCard{
+			Id:               id,
+			CreditCardNumber: val[len(val)-4:],
+		})
 	}
 
 	return &pb.GetCreditCardsResponse{
-		CreditCards: creditCardNumbers,
+		CreditCards: creditCards,
 	}, nil
 }

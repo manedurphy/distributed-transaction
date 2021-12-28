@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 
 	"github.com/sirupsen/logrus"
@@ -12,35 +13,50 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+type opts struct {
+	Debug bool  `short:"d" long:"debug" description:"set logs to debug level"`
+	Port  int32 `short:"p" long:"port" description:"the port to run the gRPC server"`
+}
+
 func main() {
 	var (
 		lis        net.Listener
-		opts       []grpc.ServerOption
+		cmdOpts    opts
+		grpcOpts   []grpc.ServerOption
 		grpcServer *grpc.Server
 		srv        *service.Service
 		logger     *logrus.Logger
+		formatter  *logrus.JSONFormatter
+		address    string
 		err        error
 	)
 
 	logger = logrus.New()
-	logger.Formatter = &logrus.JSONFormatter{
-		PrettyPrint: true,
+	formatter = new(logrus.JSONFormatter)
+	if cmdOpts.Debug {
+		formatter.PrettyPrint = true
+		logger.Level = logrus.DebugLevel
 	}
-	if lis, err = net.Listen("tcp", ":8082"); err != nil {
+	logger.Formatter = formatter
+
+	address = ":8082"
+	if cmdOpts.Port > 0 {
+		address = fmt.Sprintf(":%d", cmdOpts.Port)
+	}
+	if lis, err = net.Listen("tcp", address); err != nil {
 		panic(err)
 	}
 
-	grpcServer = grpc.NewServer(opts...)
+	grpcServer = grpc.NewServer(grpcOpts...)
 	if srv, err = service.NewService(service.Config{
 		Logger: logger,
 	}); err != nil {
 		panic(err)
 	}
-
 	pb.RegisterPaymentServiceServer(grpcServer, srv)
 
 	logger.WithFields(logrus.Fields{
-		"port":         8082,
+		"address":      address,
 		"service_name": "payments",
 	}).Infoln("gRPC server started")
 	if err = grpcServer.Serve(lis); err != nil {

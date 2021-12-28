@@ -70,7 +70,7 @@ func NewService(cfg Config) (*Service, error) {
 	}, err
 }
 
-func (s *Service) GetCustomer(ctx context.Context, req *pb.GetCustomerRequest) (*pb.GetCustomerResponse, error) {
+func (s *Service) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
 	var (
 		row          *sql.Row
 		customer     pb.Customer
@@ -86,16 +86,18 @@ func (s *Service) GetCustomer(ctx context.Context, req *pb.GetCustomerRequest) (
 		s.logger.WithFields(logrus.Fields{
 			"err": err,
 		}).Errorln("could not get data from mysql")
-		return &pb.GetCustomerResponse{}, status.Error(codes.NotFound, "Customer with that email not found")
+		return &pb.LoginResponse{}, status.Error(codes.NotFound, "Customer with that email not found")
 	}
 
 	if password != req.GetPassword() {
 		s.logger.Errorln("invalid password")
-		return &pb.GetCustomerResponse{}, status.Error(codes.FailedPrecondition, "Invalid credentials")
+		return &pb.LoginResponse{}, status.Error(codes.FailedPrecondition, "Invalid credentials")
 	}
 
-	s.logger.Infoln("successful login")
-	return &pb.GetCustomerResponse{
+	s.logger.WithFields(logrus.Fields{
+		"customer": customer.String(),
+	}).Infoln("successful login")
+	return &pb.LoginResponse{
 		Customer: &customer,
 	}, nil
 }
@@ -161,6 +163,29 @@ func (s *Service) CreateCustomer(ctx context.Context, req *pb.CreateCustomerRequ
 			Email:     req.GetEmail(),
 			Wallet:    100,
 		},
+	}, nil
+}
+
+func (s *Service) GetCustomerByID(ctx context.Context, req *pb.GetCustomerByIDRequest) (*pb.GetCustomerByIDResponse, error) {
+	var (
+		customer pb.Customer
+		row      *sql.Row
+		query    string
+		err      error
+	)
+
+	query = fmt.Sprintf("SELECT id, first_name, last_name, email, wallet FROM customers_table WHERE id = '%d';", req.GetCustomerId())
+	row = s.db.QueryRowContext(ctx, query)
+
+	if err = row.Scan(&customer.Id, &customer.FirstName, &customer.LastName, &customer.Email, &customer.Wallet); err != nil {
+		s.logger.WithFields(logrus.Fields{
+			"err": err,
+		}).Errorln("could not get data from mysql")
+		return &pb.GetCustomerByIDResponse{}, status.Error(codes.NotFound, "Customer with that ID not found")
+	}
+
+	return &pb.GetCustomerByIDResponse{
+		Customer: &customer,
 	}, nil
 }
 

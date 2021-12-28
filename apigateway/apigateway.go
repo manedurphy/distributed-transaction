@@ -29,14 +29,15 @@ func main() {
 	)
 
 	ctx = context.Background()
-	fs = http.FileServer(http.Dir("./static"))
 	mux = runtime.NewServeMux(
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{
-				UseProtoNames: true,
+				UseProtoNames:   true,
+				EmitUnpopulated: true,
 			},
 		}),
 	)
+
 	opts = []grpc.DialOption{grpc.WithInsecure()}
 	if err = orderv1.RegisterOrderServiceHandlerFromEndpoint(ctx, mux, os.Getenv("ORDERS_SERVICE_ADDR"), opts); err != nil {
 		panic(err)
@@ -50,19 +51,22 @@ func main() {
 		panic(err)
 	}
 
-	mux.HandlePath("GET", "/sse/*", getOrderStatus)
-	http.Handle("/", fs)
+	fs = http.StripPrefix("/distributed-transaction/", http.FileServer(http.Dir("./static")))
+	http.Handle("/distributed-transaction/", fs)
+
 	go func() {
 		if err := http.ListenAndServe(":3000", nil); err != nil {
 			panic(err)
 		}
 	}()
 
-	fmt.Println("API Gateway started on port 8000")
+	mux.HandlePath("GET", "/distributed-transaction/sse/*", getOrderStatus)
 	srv = http.Server{
 		Addr:    ":8000",
 		Handler: cors.Default().Handler(mux),
 	}
+
+	fmt.Println("API Gateway started on port 8000")
 	if err = srv.ListenAndServe(); err != nil {
 		panic(err)
 	}
@@ -78,7 +82,7 @@ func getOrderStatus(w http.ResponseWriter, r *http.Request, pathParams map[strin
 		orderClient orderv1.OrderServiceClient
 		err         error
 	)
-	if id, err = strconv.Atoi(strings.TrimPrefix(r.URL.Path, "/sse/")); err != nil {
+	if id, err = strconv.Atoi(strings.TrimPrefix(r.URL.Path, "/distributed-transaction/sse/")); err != nil {
 		panic(err)
 	}
 

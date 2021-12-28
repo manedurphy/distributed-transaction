@@ -64,26 +64,32 @@ message GetCreditCardsRequest {
 }
 
 message GetCreditCardsResponse {
+    message CreditCard {
+        // The unique id of the credit card record
+        int32 id = 1;
+        // The credit card number
+        string credit_card_number = 2;
+    }
     // All credit cards that belong to the customer
-    repeated string credit_cards = 1;
+    repeated CreditCard credit_cards = 1;
 }
 
 service PaymentService {
     rpc AddCreditCard(AddCreditCardRequest) returns (AddCreditCardResponse) {
         option (google.api.http) = {
-            post: "/api/payments/v1/credit-card"
-            body: "*"
-        };
-    }
-    rpc AddFunds(AddFundsRequest) returns (AddFundsResponse) {
-        option (google.api.http) = {
-            post: "/api/payments/v1/funds"
+            post: "/distributed-transaction/payments/v1/credit-cards/create"
             body: "*"
         };
     }
     rpc GetCreditCards(GetCreditCardsRequest) returns (GetCreditCardsResponse) {
         option (google.api.http) = {
-            post: "/api/payments/v1/credit-cards"
+            post: "/distributed-transaction/payments/v1/credit-cards/get"
+            body: "*"
+        };
+    }
+    rpc AddFunds(AddFundsRequest) returns (AddFundsResponse) {
+        option (google.api.http) = {
+            post: "/distributed-transaction/payments/v1/funds"
             body: "*"
         };
     }

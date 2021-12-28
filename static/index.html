@@ -35,9 +35,9 @@
 
         <form id="order-form" style="display: none">
             <label for="total">Enter total amount for order</label><br />
-            <input type="text" id="total" name="total" /><br />
+            <input type="text" id="total" name="total" required /><br />
             <br />
-            <button id="order-btn" type="button" onclick="javascript:placeOrder()">Place Order</button>
+            <button id="order-btn" type="submit">Place Order</button>
             <button id="funds-btn" type="button" onclick="javascript:renderFundsForm()">Add Funds</button>
         </form>
 
@@ -46,7 +46,7 @@
             <select name="cc-list" id="cc-list"></select>
             <br />
             <label for="wallet-add">How much would you like to add?</label> <br />
-            <input type="number" name="wallet-add" id="wallet-add" placeholder="15" />
+            <input type="number" name="wallet-add" id="wallet-add" placeholder="15" required />
             <br />
             <button type="submit">Add Funds</button>
             <button type="button" onclick="javascript:renderCreditCardForm()">Add Credit Card</button>
@@ -54,8 +54,8 @@
         </form>
 
         <form id="cc-form" style="display: none">
-            <label for="cc-num">Credit card number</label><br />
-            <input type="text" id="cc-num" name="cc-num" placeholder="1111-2222-3333-4444" />
+            <label for="cc-num">Credit Card Number</label><br />
+            <input type="text" id="cc-num" name="cc-num" placeholder="1111 2222 3333 4444" required />
             <br />
             <label for="exp-month">Expiration Month</label><br />
             <select name="exp-month" id="exp-month">
@@ -83,7 +83,7 @@
             </select>
             <br />
             <label for="cvv">CVV</label><br />
-            <input type="text" id="cvv" name="cvv" placeholder="111" /> <br />
+            <input type="text" id="cvv" name="cvv" placeholder="111" required /> <br />
             <br />
             <button id="add-cc-btn" type="submit">Add</button>
             <button type="button" onclick="javascript:renderFundsForm()">Back</button>

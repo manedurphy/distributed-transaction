@@ -19,6 +19,12 @@ const expYear = document.getElementById('exp-year');
 const cvv = document.getElementById('cvv');
 const walletAdd = document.getElementById('wallet-add');
 
+// Production
+let prefix = 'https://api.manedurphy.dev';
+
+// Development
+// let prefix = 'http://localhost:8000';
+
 signupForm.addEventListener('submit', function (e) {
     e.preventDefault();
     createCustomer();
@@ -39,6 +45,26 @@ fundsForm.addEventListener('submit', function (e) {
     addFundsToWallet();
 });
 
+orderForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    placeOrder();
+});
+
+ccNum.addEventListener('keyup', function () {
+    let val = ccNum.value;
+    let newVal = '';
+    val = val.replace(/\s/g, '');
+
+    for (let i = 0; i < val.length; i++) {
+        if (i % 4 == 0 && i > 0) {
+            newVal = newVal.concat(' ');
+        }
+        newVal = newVal.concat(val[i]);
+    }
+
+    ccNum.value = newVal;
+});
+
 function createCustomer() {
     const customer = {
         first_name: first.value,
@@ -46,7 +72,7 @@ function createCustomer() {
         email: signupEmail.value,
         password: signupPassword.value,
     };
-    fetch('http://localhost:8000/api/customers/v1', {
+    fetch(`${prefix}/distributed-transaction/customers/v1/create`, {
         method: 'POST',
         body: JSON.stringify(customer),
         headers: {
@@ -75,7 +101,7 @@ function login() {
         email: loginEmail.value,
         password: loginPassword.value,
     };
-    fetch('http://localhost:8000/api/customers/v1/login', {
+    fetch(`${prefix}/distributed-transaction/customers/v1/login`, {
         method: 'POST',
         body: JSON.stringify(reqBody),
         headers: {
@@ -99,15 +125,33 @@ function login() {
         .catch((err) => console.error(err));
 }
 
+function getCustomerInfo(id) {
+    const reqBody = {
+        customer_id: id,
+    };
+    fetch(`${prefix}/distributed-transaction/customers/v1/get`, {
+        method: 'POST',
+        body: JSON.stringify(reqBody),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+        .then((resp) => resp.json())
+        .then((data) => {
+            customerData = data.customer;
+        })
+        .catch((err) => console.error(err));
+}
+
 function addCreditCard() {
     const reqBody = {
         customer_id: customerData.id,
-        credit_card_number: ccNum.value,
+        credit_card_number: ccNum.value.split(' ').join(''),
         expiration: `${expYear.value}-${expMonth.value}`,
         cvv: Number(cvv.value),
     };
 
-    fetch('http://localhost:8000/api/payments/v1/credit-card', {
+    fetch(`${prefix}/distributed-transaction/payments/v1/credit-cards/create`, {
         method: 'POST',
         body: JSON.stringify(reqBody),
         headers: {
@@ -124,6 +168,13 @@ function addCreditCard() {
         .catch((err) => console.error(err));
 }
 
+function resetCreditCardForm() {
+    ccNum.value = '';
+    expYear.value = '';
+    expMonth.value = '';
+    cvv.value = '';
+}
+
 function renderOrderForm() {
     const walletDiv = document.createElement('div');
     walletDiv.id = 'wallet';
@@ -133,6 +184,7 @@ function renderOrderForm() {
     orderForm.style.display = 'block';
     walletDiv.textContent = `You have ${customerData.wallet} dollars in your wallet`;
     body.prepend(walletDiv);
+    getCustomerInfo(customerData.id);
 }
 
 function renderLoginForm() {
@@ -151,7 +203,7 @@ function placeOrder() {
         total: Number(total.value),
     };
 
-    fetch('http://localhost:8000/api/orders/v1', {
+    fetch(`${prefix}/distributed-transaction/orders/v1`, {
         method: 'POST',
         body: JSON.stringify(order),
         headers: {
@@ -172,7 +224,7 @@ function getOrderStatus({ id, total }) {
     orderStatusDiv.textContent = 'placing order...';
     body.appendChild(orderStatusDiv);
 
-    const sse = new EventSource(`http://localhost:8000/sse/${id}`);
+    const sse = new EventSource(`${prefix}/distributed-transaction/sse/${id}`);
     sse.onmessage = function (event) {
         const data = JSON.parse(event.data);
 
@@ -202,11 +254,11 @@ function getOrderStatus({ id, total }) {
 function addFundsToWallet() {
     const reqBody = {
         customer_id: customerData.id,
-        credit_card_id: 1,
+        credit_card_id: Number(ccList.value),
         amount: Number(walletAdd.value),
     };
 
-    fetch('http://localhost:8000/api/payments/v1/funds', {
+    fetch(`${prefix}/distributed-transaction/payments/v1/funds`, {
         method: 'POST',
         body: JSON.stringify(reqBody),
     })
@@ -232,6 +284,7 @@ function addFundsToWallet() {
 }
 
 function renderCreditCardForm() {
+    resetCreditCardForm();
     fundsForm.style.display = 'none';
     ccForm.style.display = 'block';
 }
@@ -252,7 +305,7 @@ function renderFundsForm() {
         customer_id: customerData.id,
     };
 
-    fetch('http://localhost:8000/api/payments/v1/credit-cards', {
+    fetch(`${prefix}/distributed-transaction/payments/v1/credit-cards/get`, {
         method: 'POST',
         body: JSON.stringify(reqBody),
         headers: {
@@ -261,11 +314,12 @@ function renderFundsForm() {
     })
         .then((resp) => resp.json())
         .then((data) => {
-            if (data.credit_cards) {
+            if (data.credit_cards.length > 0) {
+                customerData.creditCards = data.credit_cards;
                 data.credit_cards.forEach((cc) => {
                     const opt = document.createElement('option');
-                    opt.value = cc;
-                    opt.textContent = `**** ${cc}`;
+                    opt.value = cc.id;
+                    opt.textContent = `**** ${cc.credit_card_number}`;
                     ccList.appendChild(opt);
                 });
                 return;

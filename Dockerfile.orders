@@ -1,5 +1,8 @@
 FROM golang:1.17-alpine3.15 as builder
 
+ARG TARGETARCH
+ARG TARGETOS
+
 WORKDIR /app
 
 COPY ./ ./
@@ -7,7 +10,7 @@ COPY ./go.mod ./
 
 RUN go mod tidy -go=1.16 && \
 	go mod tidy -go=1.17 && \
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o orders/cmd orders/cmd/orders.go
+	CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o orders/cmd orders/cmd/orders.go
 
 FROM alpine:3.15.0
 

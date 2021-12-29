@@ -1,30 +1,25 @@
 #! /bin/bash
 
-APIGATEWAY_VERSION="1.0.4"
-CUSTOMERS_VERSION="1.0.3"
-ORDERS_VERSION="1.0.3"
-PAYMENTS_VERSION="1.0.3"
-
 docker buildx build \
-	--platform linux/amd64,linux/arm/v7 \
-	--tag manedurphy/distributed-transaction-apigateway:$APIGATEWAY_VERSION \
-	--push \
+	--platform linux/amd64 \
+	--tag manedurphy/distributed-transaction-apigateway \
+	--load \
 	--file Dockerfile.apigateway .
 
 docker buildx build \
-	--platform linux/amd64,linux/arm/v7 \
-	--tag manedurphy/distributed-transaction-customers:$CUSTOMERS_VERSION \
-	--push \
+	--platform linux/amd64 \
+	--tag manedurphy/distributed-transaction-customers \
+	--load \
 	--file Dockerfile.customers .
 
 docker buildx build \
-	--platform linux/amd64,linux/arm/v7 \
-	--tag manedurphy/distributed-transaction-orders:$ORDERS_VERSION \
-	--push \
+	--platform linux/amd64 \
+	--tag manedurphy/distributed-transaction-orders \
+	--load \
 	--file Dockerfile.orders .
 
 docker buildx build \
-	--platform linux/amd64,linux/arm/v7 \
-	--tag manedurphy/distributed-transaction-payments:$PAYMENTS_VERSION \
-	--push \
+	--platform linux/amd64 \
+	--tag manedurphy/distributed-transaction-payments \
+	--load \
 	--file Dockerfile.payments .

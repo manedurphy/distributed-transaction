@@ -53,6 +53,10 @@ func main() {
 
 	fs = http.StripPrefix("/distributed-transaction/", http.FileServer(http.Dir("./static")))
 	http.Handle("/distributed-transaction/", fs)
+	http.HandleFunc("/distributed-transaction/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	})
 
 	go func() {
 		if err := http.ListenAndServe(":3000", nil); err != nil {

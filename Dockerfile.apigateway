@@ -3,13 +3,11 @@ FROM --platform=${BUILDPLATFORM} golang:1.17-alpine3.15 as builder
 ARG TARGETARCH
 ARG TARGETOS
 
-WORKDIR /app
+WORKDIR /build
 
 COPY ./ ./
-COPY ./go.mod ./
 
-RUN go mod tidy -go=1.16 && \
-	go mod tidy -go=1.17 && \
+RUN go mod tidy -go=1.17 && \
 	CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o apigateway apigateway/apigateway.go
 
 FROM alpine:3.15.0
@@ -18,7 +16,10 @@ RUN apk --no-cache add ca-certificates
 
 WORKDIR /app
 
-COPY --from=builder /app/apigateway/apigateway /app/apigateway
-COPY ./static ./static
+COPY --from=builder /build/apigateway/apigateway /app/apigateway
+COPY ./static /app/static
+COPY ./configs /app/configs
+
+USER 1000
 
 ENTRYPOINT [ "/app/apigateway" ]

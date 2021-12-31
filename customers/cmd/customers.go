@@ -58,9 +58,9 @@ func main() {
 	ctx = context.Background()
 	logger = logrus.New()
 	formatter = new(logrus.JSONFormatter)
-	cfgPath = cmdOpts.ConfigFile
+	cfgPath = defaultConfigPath
 
-	if cmdOpts.ConfigFile == "" {
+	if cmdOpts.ConfigFile != "" {
 		cfgPath = defaultConfigPath
 	}
 

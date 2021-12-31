@@ -61,7 +61,7 @@ func main() {
 	cfgPath = defaultConfigPath
 
 	if cmdOpts.ConfigFile != "" {
-		cfgPath = defaultConfigPath
+		cfgPath = cmdOpts.ConfigFile
 	}
 
 	if err = hclsimple.DecodeFile(cfgPath, nil, &cfg); err != nil {
@@ -115,6 +115,9 @@ func main() {
 	}).Infoln("gRPC server started")
 
 	if err = grpcServer.Serve(lis); err != nil {
-		panic(err)
+		logger.WithFields(logrus.Fields{
+			"address": address,
+			"err":     err,
+		}).Panicln("could not start gRPC server")
 	}
 }

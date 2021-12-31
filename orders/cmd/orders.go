@@ -114,6 +114,9 @@ func main() {
 		"service_name": "orders",
 	}).Infoln("gRPC server started")
 	if err = grpcServer.Serve(lis); err != nil {
-		panic(err)
+		logger.WithFields(logrus.Fields{
+			"address": address,
+			"err":     err,
+		}).Panicln("could not start gRPC server")
 	}
 }

@@ -17,5 +17,8 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /app
 
 COPY --from=builder /build/customers/cmd/customers /app/customers
+COPY ./configs/customers.hcl /app/configs/customers.hcl
+
+USER 1000
 
 ENTRYPOINT [ "/app/customers" ]

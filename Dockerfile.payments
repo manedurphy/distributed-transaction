@@ -17,5 +17,8 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /app
 
 COPY --from=builder /build/payments/cmd/payments /app/payments
+COPY ./configs/payments.hcl /app/configs/payments.hcl
+
+USER 1000
 
 ENTRYPOINT [ "/app/payments" ]

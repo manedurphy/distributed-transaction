@@ -18,7 +18,7 @@ WORKDIR /app
 
 COPY --from=builder /build/apigateway/apigateway /app/apigateway
 COPY ./static /app/static
-COPY ./configs /app/configs
+COPY ./configs/apigateway.hcl /app/configs/apigateway.hcl
 
 USER 1000
 

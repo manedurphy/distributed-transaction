@@ -51,3 +51,17 @@ Orders service removes the record from its database.
 ## Deployment
 
 - This application is deployed on my homelab Kubernetes [cluster](https://apps.manedurphy.dev/distributed-transaction/)
+- mTLS service-to-service communication is handled via Envoy sidecar proxies injected by [Consul](https://www.consul.io/docs/k8s/connect)
+
+```bash
+# All pods in application namespace
+kubectl get pods -o wide -n distributed-transaction
+
+# Output
+NAME                          READY   STATUS    RESTARTS      AGE    IP            NODE            NOMINATED NODE   READINESS GATES
+redis-5c6c7d7879-5x6rz        2/2     Running   0             136m   10.42.2.99    k3s-worker-01   <none>           <none>
+payments-c47b85df5-bjzpw      2/2     Running   2 (45m ago)   66m    10.42.2.106   k3s-worker-01   <none>           <none>
+customers-6dd545f45c-k6jtq    2/2     Running   2 (45m ago)   66m    10.42.2.108   k3s-worker-01   <none>           <none>
+apigateway-78f99dd4f7-88vtt   2/2     Running   0             42m    10.42.2.109   k3s-worker-01   <none>           <none>
+orders-5d5797dbf4-485xj       2/2     Running   2 (19m ago)   24m    10.42.2.111   k3s-worker-01   <none>           <none>
+```
